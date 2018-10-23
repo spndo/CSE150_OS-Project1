@@ -23,6 +23,7 @@ public class Condition2 {
     public Condition2(Lock conditionLock) {
 	this.conditionLock = conditionLock;
     }
+    
 
     /**
      * Atomically release the associated lock and go to sleep on this condition
@@ -30,11 +31,20 @@ public class Condition2 {
      * current thread must hold the associated lock. The thread will
      * automatically reacquire the lock before <tt>sleep()</tt> returns.
      */
+
     public void sleep() {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
-
+	Machine.interrupt().disable();
+	
+	KThread thread = KThread.currentThread();
+	
+	
+	waiting_queue.add(thread);
+	
 	conditionLock.release();
 
+	Machine.interrupt().enable();
+	
 	conditionLock.acquire();
     }
 
@@ -50,9 +60,18 @@ public class Condition2 {
      * Wake up all threads sleeping on this condition variable. The current
      * thread must hold the associated lock.
      */
-    public void wakeAll() {
+    
+    public void wakeAll() throws InterruptedException {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+	
+	Machine.interrupt().disable();
+	
+	while(waiting_queue != null) {
+		Machine.interrupt().wait();
+	}
     }
 
     private Lock conditionLock;
+    
+    private SynchList waiting_queue;
 }
