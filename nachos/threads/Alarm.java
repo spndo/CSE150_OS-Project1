@@ -25,7 +25,7 @@ public class Alarm
     		{
     			public void run()
     			{ 
-    				timerInterrupt(); 		 
+    				timerInterrupt();		 
     			}
 	    });
 	
@@ -44,24 +44,18 @@ public class Alarm
     		boolean intStatus = Machine.interrupt().disable();	
     		long MachineTime = Machine.timer().getTime();
     		
-    		int j = 0;
-    		do
+    		for(int j = 0; j < wakeThreadQ.size(); j++)
     		{
     			WakeThread wakingThread = wakeThreadQ.get(j);			
     			
-    			if (wakingThread.MachineTime <= MachineTime)
+    			if (MachineTime >= wakingThread.MachineTime)
     			{
     				wakingThread.wakeThread.ready();		
     				wakeThreadQ.remove(j--);			
     			}
-    			
-    			j++;
-    			
-    		}while(j <= wakeThreadQ.size());
-    		
-    		
+    		}
+
     		KThread.currentThread().yield();
-    		Machine.interrupt().restore(intStatus);
     }
 
     /**
@@ -86,8 +80,7 @@ public class Alarm
 	    	WakeThread wakingThread = new WakeThread(MachineTime, KThread.currentThread());
 	    	wakeThreadQ.add(wakingThread);	
 	    	KThread.sleep();						
-	    	
-	    	Machine.interrupt().restore(intStatus);		
+	    		
     }
     
     
