@@ -48,7 +48,7 @@ public class Alarm
     		{
     			WakeThread wakingThread = wakeThreadQ.get(j);			
     			
-    			if (MachineTime > wakingThread.MachineTime)
+    			if (MachineTime >= wakingThread.MachineTime)
     			{
     				wakingThread.wakeThread.ready();		
     				wakeThreadQ.remove(j--);			
@@ -85,7 +85,7 @@ public class Alarm
     
     
     
-    private class WakeThread
+    public class WakeThread
     {
         	WakeThread(long wakingThread, KThread wakingCurrentThread)
         	{
@@ -96,6 +96,6 @@ public class Alarm
         		public KThread wakeThread;
     }
     
-    private LinkedList<WakeThread> wakeThreadQ;	
+    public LinkedList<WakeThread> wakeThreadQ;	
    
 }
