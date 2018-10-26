@@ -141,9 +141,22 @@ public class PriorityScheduler extends Scheduler {
 	}
 
 	public KThread nextThread() {
+		KThread thread = KThread.currentThread();
+		
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me
-	    return null;
+	    
+	    
+	    if (thread == null) {
+	    	pickNextThread();
+	    	return null;
+	    }
+	    
+	    else {
+	    	acquire(thread);
+	    	return thread;
+	    }
+	    
 	}
 
 	/**
@@ -154,8 +167,23 @@ public class PriorityScheduler extends Scheduler {
 	 *		return.
 	 */
 	protected ThreadState pickNextThread() {
+		int max = -1;
+		KThread thread = KThread.currentThread();
+		KThread next = null;
+		
+		while(thread != null) {
+			if(getEffectivePriority(thread) > max) {
+				max = getEffectivePriority(thread);
+				next = thread;
+			}
+		}
+		
+		if(thread == null) {
+			return null;
+		}
+		
+		return getThreadState(next);
 	    // implement me
-	    return null;
 	}
 	
 	public void print() {
