@@ -1,71 +1,283 @@
 package nachos.threads;
+
 import nachos.ag.BoatGrader;
+import nachos.machine.*;
 
-public class Boat
-{
-    static BoatGrader bg;
-    
-    public static void selfTest()
-    {
-	BoatGrader b = new BoatGrader();
+public class Boat {
+	// global variables to check people on island.
+	//counter to hold, but only can be accessed thru threads
+	static int childOnO = 0;
+	static int childOnM = 0;
+	static int adultsOnO = 0;
+	static int adultsOnM = 0;
+	static int pplOnBoat = 0;		//# of people on boat, only used in child case
+	static int boatLocation = 0;		//boat is on Oahu
 	
-	System.out.println("\n ***Testing Boats with only 2 children***");
-	begin(0, 2, b);
-
-//	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
-//  	begin(1, 2, b);
-
-//  	System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
-//  	begin(3, 3, b);
-    }
-
-    public static void begin( int adults, int children, BoatGrader b )
-    {
-	// Store the externally generated autograder in a class
-	// variable to be accessible by children.
-	bg = b;
-
-	// Instantiate global variables here
+	static Lock threadLock = new Lock();
+	//communicate how many people
+	static Communicator c = new Communicator();
 	
-	// Create threads here. See section 3.4 of the Nachos for Java
-	// Walkthrough linked from the projects page.
+	//used to account for those on Oahu
+	static Condition2 CurrentlyOnOahu = new Condition2(threadLock);
+	//used to account for those on Molokai
+	static Condition2 CurrentlyOnMolokai = new Condition2(threadLock);
+	//used to account for the threads adult/child getting on the boat
+	static Condition2 getOnBoat = new Condition2(threadLock);
 
-	Runnable r = new Runnable() {
-	    public void run() {
-                SampleItinerary();
-            }
-        };
-        KThread t = new KThread(r);
-        t.setName("Sample Boat Thread");
-        t.fork();
+	static BoatGrader bg;
 
-    }
+	public static void selfTest()
+	{
+		BoatGrader b = new BoatGrader();
 
-    static void AdultItinerary()
-    {
-	/* This is where you should put your solutions. Make calls
-	   to the BoatGrader to show that it is synchronized. For
-	   example:
-	       bg.AdultRowToMolokai();
-	   indicates that an adult has rowed the boat across to Molokai
-	*/
-    }
+		System.out.println("\n ***Testing Boats with only 2 children***");
+		begin(0, 2, b);
 
-    static void ChildItinerary()
-    {
-    }
+		// System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
+		// begin(1, 2, b);
 
-    static void SampleItinerary()
-    {
-	// Please note that this isn't a valid solution (you can't fit
-	// all of them on the boat). Please also note that you may not
-	// have a single thread calculate a solution and then just play
-	// it back at the autograder -- you will be caught.
-	System.out.println("\n ***Everyone piles on the boat and goes to Molokai***");
-	bg.AdultRowToMolokai();
-	bg.ChildRideToMolokai();
-	bg.AdultRideToMolokai();
-	bg.ChildRideToMolokai();
-    }
-    
+		// System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
+		// begin(3, 3, b);
+	}
+
+	public static void begin(int adults, int children, BoatGrader b) {
+		// Store the externally generated autograder in a class
+		// variable to be accessible by children.
+		bg = b;
+
+		// Instantiate global variables here
+		
+		/*They can remember how many people are on each island but knowingly beforehand
+		they should both be 0.*/
+		
+		childOnO = children;
+		childOnM = 0;
+		adultsOnO = adults;
+		adultsOnM = 0;
+
+		// Create threads here. See section 3.4 of the Nachos for Java
+		// 2 Threads created here, Child & Adult Thread
+
+		// Walkthrough linked from the projects page.
+
+		//the child thread
+		Runnable childCan = new Runnable()
+		{
+			public void run()
+			{
+				int island = 0;
+				try
+				{
+					ChildItinerary(island);
+				} catch (InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		int i = 0;
+
+		do
+		{
+			KThread childThread = new KThread(childCan);
+			childThread.setName("Child Thread: " + i);
+			childThread.fork();
+			i++;
+		}while(i < children);
+
+		//the adult thread
+		Runnable adultCan = new Runnable()
+		{
+			public void run()
+			{
+				int island = 0;
+				try
+				{
+					AdultItinerary(island);
+				} catch (InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		int j = 0;
+		
+		do
+		{
+			KThread adultThread = new KThread(adultCan);
+			adultThread.setName("Adult Thread: " + j);
+			adultThread.fork();
+			j++;
+		}while(j < adults);
+		
+		
+		/*ensure there is an end when all the people moved from the threads to Molokai
+		equals the amount of adults + children intially. */
+		do
+		{
+			int totalPeople = c.listen();
+			System.out.println("Total Peopel On Molokai: " + totalPeople);
+			if(totalPeople == (children + adults))
+			{
+				break;
+			}
+		}while(true);
+	
+	}
+
+	static void AdultItinerary(int island) throws InterruptedException {
+		/*
+		 * This is where you should put your solutions. Make calls to the BoatGrader to
+		 * show that it is synchronized. For example: bg.AdultRowToMolokai(); indicates
+		 * that an adult has rowed the boat across to Molokai
+		 */
+		
+		threadLock.acquire();
+		
+		do
+		{
+			if(island == 0)	//check if the adult is on Oahu
+			{
+				/*check if boat is not on Oahu, if there are > 1 child on Oahu, check spaces 
+				on boat because it cant be greater than 2 */
+				while (boatLocation != 0 || childOnO > 1 || pplOnBoat > 0 )
+				{
+					//sleeps, because the adult can row by himself over from Oahu to Molokai
+					CurrentlyOnOahu.sleep();
+				}
+				//calls the rows
+				bg.AdultRowToMolokai();
+				
+				//update global variables
+				adultsOnO--;
+				adultsOnM++;
+				boatLocation = 1;
+				island = 1;
+				
+				//total number of people that are currently on Molokai
+				//returns said value
+				c.speak(childOnM + adultsOnM);
+				
+				//after the adult gets there, makes sure everyone is asleep
+				CurrentlyOnMolokai.wakeAll();
+				CurrentlyOnMolokai.sleep();
+				
+				Lib.assertTrue(childOnO > 0);
+			}
+			else if(island == 1)		//checks if the adult is on Molokai
+			{
+				CurrentlyOnMolokai.sleep();
+			}
+			else
+			{
+				Lib.assertTrue(false);
+				break;
+			}
+		}while(true);
+		
+		threadLock.release();
+	
+	}
+
+	static void ChildItinerary(int island) throws InterruptedException
+	{
+		threadLock.acquire();
+		
+		do
+		{
+			if(island == 0)	//check if child is on Oahu
+			{
+				while(pplOnBoat >= 2 || (adultsOnO > 0 && childOnO == 1) || island != 0)
+				{
+					CurrentlyOnOahu.sleep();
+				}
+				
+				CurrentlyOnOahu.wakeAll();
+				
+				if(adultsOnO == 0 && childOnO ==1)		//case where only 1 child left
+				{
+					bg.ChildRowToMolokai();	//last child rows theres
+					childOnO--;				//childOnO == 0 in this instance
+					pplOnBoat = 0;			//ensure no one on the boat
+					island = 1;				//notify that we are on Molokai
+					boatLocation = 1;		//boat is at Molokai
+					
+					c.speak(childOnM + adultsOnM);	//total number of people that are currently on Molokai
+					CurrentlyOnMolokai.sleep();
+					
+				}
+				else if (childOnO > 1)		//case where more than 1 child still on Oahu
+				{
+					/*Test case where if there are more than 1 children then obviously
+					 * two children could board the boat, however explicitly we have to 
+					 * call ChildRowToMolokai as the pilot, and ChildRideToMolokai
+					 *  for the passenger*/
+					
+					if(pplOnBoat == 0)		
+					{
+						pplOnBoat++;		//pilot child gets on
+						getOnBoat.sleep();
+						/*Waits until the second child boards then continues*/
+						
+						childOnO--;				//accounts for pilot child leaving Oahu
+						bg.ChildRowToMolokai();	//pilot child rows to Oahu
+						childOnM++;				//pilot child arrives at Molokai
+						island = 1;				//currently at Molokai
+						
+						getOnBoat.wake();		//wakes other child thread, the passenger
+						CurrentlyOnMolokai.sleep();	
+					}
+					else if (pplOnBoat == 1)
+					{
+						pplOnBoat++;				//should be 2 ppl/children on board the boat
+						getOnBoat.wake();		//wakes the child who is the pilot
+						getOnBoat.sleep();		
+						
+						childOnO--;				//accounts for child passenger leaving Oahu
+						bg.ChildRideToMolokai();		//passenger only calls the RideToMolokai
+						pplOnBoat = pplOnBoat - 2;	//when both child gets off the boat, should =0
+						childOnM++;					//passenger child arrives at Molokai
+						island = 1;					//they are currently at Molokai
+						boatLocation = 1;			//boat also located at Molokai
+						
+						c.speak(childOnM + adultsOnM);	//communicates back the total # on people that already arrived
+						CurrentlyOnMolokai.wakeAll();	//WakeAll threads then sleep em
+						CurrentlyOnMolokai.sleep();			
+					}
+				}		
+			}
+			else if (island == 1)	//child is now on Molokai
+			{
+				while(boatLocation != 1)		//if boat is not there 
+				{
+					CurrentlyOnMolokai.sleep();		//sleep
+				}
+				
+				childOnM--;
+				bg.ChildRowToOahu();
+				childOnO++;
+				boatLocation = 0;
+				island = 0;
+				
+				CurrentlyOnOahu.wakeAll();
+				CurrentlyOnOahu.sleep();	
+			}
+			else
+			{
+				Lib.assertTrue(false);
+				break;
+			}
+		}while(true);
+		
+		threadLock.release();
+		
+	}
+
+	static void SampleItinerary()
+	{
+		
+	}
+
 }
