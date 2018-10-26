@@ -48,7 +48,7 @@ public class Alarm
     		{
     			WakeThread wakingThread = wakeThreadQ.get(j);			
     			
-    			if (MachineTime >= wakingThread.MachineTime)
+    			if (MachineTime > wakingThread.MachineTime)
     			{
     				wakingThread.wakeThread.ready();		
     				wakeThreadQ.remove(j--);			
