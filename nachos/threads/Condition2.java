@@ -24,7 +24,7 @@ public class Condition2 {
      */
     public Condition2(Lock conditionLock) {
 	this.conditionLock = conditionLock;
-	waitingQueue = new LinkedListed<KThread>();
+	waitingQueue = new LinkedList<KThread>();
     }
 
     /**
