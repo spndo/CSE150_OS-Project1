@@ -19,19 +19,17 @@ public class Alarm
      * alarm.
      */
 	
-	private LinkedList<WakeThread> wakeThreadQ;	//list of the queue
-	 
     public Alarm()
     {
     		Machine.timer().setInterruptHandler(new Runnable()
     		{
     			public void run()
     			{ 
-    				timerInterrupt(); 		//calls to stop  
+    				timerInterrupt(); 		 
     			}
 	    });
 	
-    		wakeThreadQ = new LinkedList<WakeThread>();		//new queue with typed LinkedList
+    		wakeThreadQ = new LinkedList<WakeThread>();	
     }
 
     /**
@@ -43,26 +41,26 @@ public class Alarm
     
     public void timerInterrupt()
     {
-    		boolean intStatus = Machine.interrupt().disable();	//makes sure the interrupt is disabled hence continuous
+    		boolean intStatus = Machine.interrupt().disable();	
     		long MachineTime = Machine.timer().getTime();
     		
     		int j = 0;
     		do
     		{
-    			WakeThread wakingThread = wakeThreadQ.get(j);			//gets the one thread that is current
+    			WakeThread wakingThread = wakeThreadQ.get(j);			
     			
-    			if (wakingThread.MachineTime <= MachineTime)		//logical check if the thread thats up for the queue and can still be ran
+    			if (wakingThread.MachineTime <= MachineTime)
     			{
-    				wakingThread.wakeThread.ready();		//the thread is ready to be out of the queue
-    				wakeThreadQ.remove(j--);			//removes the previous thread
+    				wakingThread.wakeThread.ready();		
+    				wakeThreadQ.remove(j--);			
     			}
     			
     			j++;
     			
-    		}while(j < wakeThreadQ.size());
+    		}while(j <= wakeThreadQ.size());
     		
     		
-    		KThread.currentThread().yield();			//pause
+    		KThread.currentThread().yield();
     		Machine.interrupt().restore(intStatus);
     }
 
@@ -82,14 +80,14 @@ public class Alarm
     
     public void waitUntil(long x)
     {
-	    	boolean intStatus = Machine.interrupt().disable();			//makes sure that the current status of each thread is at a 
+	    	boolean intStatus = Machine.interrupt().disable();			
 	    	long MachineTime = Machine.timer().getTime() + x;
 	    	
-	    	WakeThread wakingThread = new WakeThread(MachineTime, KThread.currentThread());	//the new thread with the new time
-	    	wakeThreadQ.add(wakingThread);			//adds the thread at head to the queue
-	    	KThread.sleep();						//sleep
+	    	WakeThread wakingThread = new WakeThread(MachineTime, KThread.currentThread());
+	    	wakeThreadQ.add(wakingThread);	
+	    	KThread.sleep();						
 	    	
-	    	Machine.interrupt().restore(intStatus);		//restores state
+	    	Machine.interrupt().restore(intStatus);		
     }
     
     
@@ -98,11 +96,13 @@ public class Alarm
     {
         	WakeThread(long wakingThread, KThread wakingCurrentThread)
         	{
-        		MachineTime = wakingThread;				//current thread thats awake but needs to wait to be executed
-        		wakeThread = wakingCurrentThread;		//the current thread that is at hand
+        		MachineTime = wakingThread;				
+        		wakeThread = wakingCurrentThread;		
         	}
         		public long MachineTime;				
         		public KThread wakeThread;
     }
+    
+    private LinkedList<WakeThread> wakeThreadQ;	
    
 }
