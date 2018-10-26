@@ -40,7 +40,8 @@ public class Boat {
 		// begin(3, 3, b);
 	}
 
-	public static void begin(int adults, int children, BoatGrader b) {
+	public static void begin(int adults, int children, BoatGrader b)
+	{
 		// Store the externally generated autograder in a class
 		// variable to be accessible by children.
 		bg = b;
@@ -66,56 +67,40 @@ public class Boat {
 			public void run()
 			{
 				int island = 0;
-				try
-				{
-					ChildItinerary(island);
-				} catch (InterruptedException e)
-				{
-					e.printStackTrace();
-				}
+				ChildItinerary(island);
 			}
 		};
 		
-		int i = 0;
-
-		do
+		for(int i = 1; i <= children; i++)
 		{
 			KThread childThread = new KThread(childCan);
 			childThread.setName("Child Thread: " + i);
 			childThread.fork();
-			i++;
-		}while(i < children);
+		}
 
+		
+		
 		//the adult thread
 		Runnable adultCan = new Runnable()
 		{
 			public void run()
 			{
 				int island = 0;
-				try
-				{
-					AdultItinerary(island);
-				} catch (InterruptedException e)
-				{
-					e.printStackTrace();
-				}
+				AdultItinerary(island);
 			}
 		};
 		
-		int j = 0;
-		
-		do
+		for(int j = 1; j <= adults; j++)
 		{
 			KThread adultThread = new KThread(adultCan);
 			adultThread.setName("Adult Thread: " + j);
 			adultThread.fork();
-			j++;
-		}while(j < adults);
+		}
 		
 		
 		/*ensure there is an end when all the people moved from the threads to Molokai
 		equals the amount of adults + children intially. */
-		do
+		while(true)
 		{
 			int totalPeople = c.listen();
 			System.out.println("Total Peopel On Molokai: " + totalPeople);
@@ -123,11 +108,12 @@ public class Boat {
 			{
 				break;
 			}
-		}while(true);
+		}
 	
 	}
 
-	static void AdultItinerary(int island) throws InterruptedException {
+	static void AdultItinerary(int island)
+	{
 		/*
 		 * This is where you should put your solutions. Make calls to the BoatGrader to
 		 * show that it is synchronized. For example: bg.AdultRowToMolokai(); indicates
@@ -136,7 +122,7 @@ public class Boat {
 		
 		threadLock.acquire();
 		
-		do
+		while(true)
 		{
 			if(island == 0)	//check if the adult is on Oahu
 			{
@@ -172,20 +158,20 @@ public class Boat {
 			}
 			else
 			{
-				Lib.assertTrue(false);
+				Lib.assertTrue(false);	//will ensure the break from the loop
 				break;
 			}
-		}while(true);
+		}
 		
 		threadLock.release();
 	
 	}
 
-	static void ChildItinerary(int island) throws InterruptedException
+	static void ChildItinerary(int island)
 	{
 		threadLock.acquire();
 		
-		do
+		while(true)
 		{
 			if(island == 0)	//check if child is on Oahu
 			{
@@ -232,6 +218,7 @@ public class Boat {
 					else if (pplOnBoat == 1)
 					{
 						pplOnBoat++;				//should be 2 ppl/children on board the boat
+						
 						getOnBoat.wake();		//wakes the child who is the pilot
 						getOnBoat.sleep();		
 						
@@ -266,12 +253,12 @@ public class Boat {
 			}
 			else
 			{
-				Lib.assertTrue(false);
+				Lib.assertTrue(false);		//will ensure the break from the loop
 				break;
 			}
-		}while(true);
+		}
 		
-		threadLock.release();
+		threadLock.release();		//release the lock
 		
 	}
 
