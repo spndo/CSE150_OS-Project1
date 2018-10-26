@@ -57,6 +57,8 @@ public class Alarm
     				wakeThreadQ.remove(j--);			//removes the previous thread
     			}
     			
+    			j++;
+    			
     		}while(j < wakeThreadQ.size());
     		
     		
