@@ -35,17 +35,18 @@ public class Condition2 {
      */
     public void sleep() {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+	    
+	boolean oldStatus = Machine.interrupt().disable();
 	
 	conditionLock.release();
 	
-	boolean oldStatus = Machine.interrupt().disable();
 	KThread currThread = KThread.currentThread();
 	waitingQueue.addLast(currThread);
 	currThread.sleep();
+	    
+	Machine.interrupt().restore(oldStatus);
 	
 	conditionLock.acquire();
-	
-	Machine.interrupt().restore(oldStatus);
 
     }
 
