@@ -13,7 +13,15 @@ public class Communicator {
     /**
      * Allocate a new communicator.
      */
+	
+	Lock lock = new Lock();
+	Condition speakerReady = new Condition(lock);
+	Condition listenerReady = new Condition(lock);
+
+	public int listener = 0, speaker = 0, send;
+	
     public Communicator() {
+    
     }
 
     /**
@@ -27,6 +35,16 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+    	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
+    	lock.acquire();
+    	speaker++;
+    	while(listener == 0) {
+    		listenerReady.sleep();
+    	}
+    	listener--;
+    	send = word;
+    	speakerReady.wake();
+    	lock.release();
     }
 
     /**
@@ -36,6 +54,15 @@ public class Communicator {
      * @return	the integer transferred.
      */    
     public int listen() {
-	return 0;
+    lock.acquire();
+    listener++;
+	int got = send;
+	listenerReady.wake();
+    while(speaker == 0){
+    	speakerReady.sleep();
+    }
+    speaker--;	
+    lock.release();	
+    return got;
     }
 }
