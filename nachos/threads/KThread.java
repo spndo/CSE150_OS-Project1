@@ -275,8 +275,16 @@ public class KThread {
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
+	
+	
+	boolean intStatus = Machine.interrupt().disable();
+	
+	if (this.status != statusFinished ){
+		readyQueue.waitForAccess(this.currentThread);
+		KThread.sleep();
+	}
+	Machine.interrupt().restore(intStatus);
 	Lib.assertTrue(this != currentThread);
-
     }
 
     /**
