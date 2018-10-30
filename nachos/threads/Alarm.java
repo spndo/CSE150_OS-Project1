@@ -9,6 +9,8 @@ import java.util.*;		//linked list
  * until a certain time.
  */
 
+
+
 public class Alarm
 {
     /**
@@ -44,18 +46,17 @@ public class Alarm
     		boolean intStatus = Machine.interrupt().disable();	
     		long MachineTime = Machine.timer().getTime();
     		
-    		for(int j = 0; j < wakeThreadQ.size(); j++)
-    		{
-    			WakeThread wakingThread = wakeThreadQ.get(j);			
+    		WakeThread wakingThread = wakeThreadQ.getFirst();			
     			
-    			if (MachineTime >= wakingThread.MachineTime)
-    			{
+    		if (MachineTime >= wakingThread.MachineTime)
+    		{
     				wakingThread.wakeThread.ready();		
-    				wakeThreadQ.remove(j--);			
-    			}
+    				wakeThreadQ.remove();
     		}
-
+    		
     		KThread.currentThread().yield();
+
+    		Machine.interrupt().restore(intStatus);
     }
 
     /**
@@ -78,8 +79,10 @@ public class Alarm
 	    	long MachineTime = Machine.timer().getTime() + x;
 	    	
 	    	WakeThread wakingThread = new WakeThread(MachineTime, KThread.currentThread());
-	    	wakeThreadQ.add(wakingThread);	
-	    	KThread.sleep();						
+	    	wakeThreadQ.add(wakingThread);
+	    	KThread.sleep();
+	    	
+	    	Machine.interrupt().restore(intStatus);
 	    		
     }
     
@@ -87,15 +90,14 @@ public class Alarm
     
     public class WakeThread
     {
-        	WakeThread(long wakingThread, KThread wakingCurrentThread)
+        	WakeThread(long wakingThread, KThread CurrentThread)
         	{
         		MachineTime = wakingThread;				
-        		wakeThread = wakingCurrentThread;		
+        		wakeThread = CurrentThread;		
         	}
         		public long MachineTime;				
         		public KThread wakeThread;
     }
     
-    public LinkedList<WakeThread> wakeThreadQ;	
-   
+    public static LinkedList<WakeThread> wakeThreadQ;
 }
