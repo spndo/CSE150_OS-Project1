@@ -90,45 +90,6 @@ public class Alarm
     /*-------*/
     
     
-    
-    
-    private static class PingAlarmTest implements Runnable {
-    	PingAlarmTest(int which, Alarm alarm) {
-    		this.which = which;
-    		this.alarm = alarm;
-    		
-    	}
-    	Alarm alarm;
-
-    	public void run() {
-    		System.out.println("thread " + which + " started.");
-    		alarm.waitUntil(which);
-    		System.out.println("thread " + which + " ran.");
-    		
-    	}
-
-    	private int which;
-    	}
-
-
-    	public static void selfTest() {
-    	Alarm myAlarm = new Alarm();
-
-    	System.out.println("*** Entering Alarm self test");
-    	KThread thread1 = new KThread(new PingAlarmTest(1000,myAlarm));
-    	thread1.fork();
-
-    	KThread thread2 = new KThread(new PingAlarmTest(500,myAlarm));
-    	thread2.fork();
-
-    	new PingAlarmTest(2000,myAlarm).run();
-
-
-    	System.out.println("*** Exiting Alarm self test");
-    	}
-
-    
-    
     public class WakeThread
     {
         	WakeThread(long wakingThread, KThread CurrentThread)
