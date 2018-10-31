@@ -42,21 +42,20 @@ public class Alarm
      */
     
     public void timerInterrupt()
-    {
-    		boolean intStatus = Machine.interrupt().disable();	
+    {	
     		long MachineTime = Machine.timer().getTime();
     		
     		WakeThread wakingThread = wakeThreadQ.getFirst();			
-    			
+    		
     		if (MachineTime >= wakingThread.MachineTime)
     		{
     				wakingThread.wakeThread.ready();		
     				wakeThreadQ.remove();
     		}
     		
-    		KThread.currentThread().yield();
+    		KThread.currentThread();
+    		KThread.yield();
 
-    		Machine.interrupt().restore(intStatus);
     }
 
     /**
@@ -75,6 +74,9 @@ public class Alarm
     
     public void waitUntil(long x)
     {
+    		if(x <= 0)
+    			return;
+    		
 	    	boolean intStatus = Machine.interrupt().disable();			
 	    	long MachineTime = Machine.timer().getTime() + x;
 	    	
@@ -85,7 +87,46 @@ public class Alarm
 	    	Machine.interrupt().restore(intStatus);
 	    		
     }
+    /*-------*/
     
+    
+    
+    
+    private static class PingAlarmTest implements Runnable {
+    	PingAlarmTest(int which, Alarm alarm) {
+    		this.which = which;
+    		this.alarm = alarm;
+    		
+    	}
+    	Alarm alarm;
+
+    	public void run() {
+    		System.out.println("thread " + which + " started.");
+    		alarm.waitUntil(which);
+    		System.out.println("thread " + which + " ran.");
+    		
+    	}
+
+    	private int which;
+    	}
+
+
+    	public static void selfTest() {
+    	Alarm myAlarm = new Alarm();
+
+    	System.out.println("*** Entering Alarm self test");
+    	KThread thread1 = new KThread(new PingAlarmTest(1000,myAlarm));
+    	thread1.fork();
+
+    	KThread thread2 = new KThread(new PingAlarmTest(500,myAlarm));
+    	thread2.fork();
+
+    	new PingAlarmTest(2000,myAlarm).run();
+
+
+    	System.out.println("*** Exiting Alarm self test");
+    	}
+
     
     
     public class WakeThread
