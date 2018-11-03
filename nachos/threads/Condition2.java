@@ -64,6 +64,7 @@ public class Condition2 {
 	boolean preStatus = Machine.interrupt().disable();
 	
 	// check the waiting queue has at lease one thread
+	// only wake up one (the first) thread from the waiting queue
 	if (!waitingQueue.isEmpty()) {
 		// take out the first thread in the waiting queue and make it ready to run
 		KThread firstThread = waitingQueue.getFirst();
