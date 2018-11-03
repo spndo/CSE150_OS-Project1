@@ -1,37 +1,26 @@
 package nachos.threads;
 
 import nachos.machine.*;
-
-import java.util.*;		//linked list 
-
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.Iterator;
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
  */
-
-
-
-public class Alarm
-{
+public class Alarm {
     /**
      * Allocate a new Alarm. Set the machine's timer interrupt handler to this
      * alarm's callback.
      *
-     * Note: Nachos will not function correctly with more than one
+     * <p><b>Note</b>: Nachos will not function correctly with more than one
      * alarm.
      */
-	
-    public Alarm()
-    {
-    		Machine.timer().setInterruptHandler(new Runnable()
-    		{
-    			public void run()
-    			{ 
-    				timerInterrupt();		 
-    			}
-	    });
-	
-    		wakeThreadQ = new LinkedList<WakeThread>();	
+    public Alarm() {
+	   Machine.timer().setInterruptHandler(new Runnable() {
+		  public void run() { timerInterrupt(); }
+	   });
+       waitQueue = new LinkedList<ThreadObject> ();
     }
 
     /**
@@ -40,64 +29,58 @@ public class Alarm
      * thread to yield, forcing a context switch if there is another thread
      * that should be run.
      */
-    
-    public void timerInterrupt()
-    {
-    		boolean intStatus = Machine.interrupt().disable();	
-    		long MachineTime = Machine.timer().getTime();
-    		
-    		WakeThread wakingThread = wakeThreadQ.getFirst();			
-    			
-    		if (MachineTime >= wakingThread.MachineTime)
-    		{
-    				wakingThread.wakeThread.ready();		
-    				wakeThreadQ.remove();
-    		}
-    		
-    		KThread.currentThread().yield();
-
-    		Machine.interrupt().restore(intStatus);
+    public void timerInterrupt() {
+        Machine.interrupt().disable();
+        Iterator<ThreadObject> iter = waitQueue.iterator();
+        while (iter.hasNext()) {
+            ThreadObject nxt = iter.next();
+            if (nxt.wakeTime <= Machine.timer().getTime()) {
+                iter.remove();
+                nxt.thread.ready();
+            }
+        }
+        Machine.interrupt().enable();
     }
 
     /**
-     * Put the current thread to sleep for at least x ticks,
+     * Put the current thread to sleep for at least <i>x</i> ticks,
      * waking it up in the timer interrupt handler. The thread must be
      * woken up (placed in the scheduler ready set) during the first timer
      * interrupt where
      *
+     * <p><blockquote>
      * (current time) >= (WaitUntil called time)+(x)
+     * </blockquote>
      *
      * @param	x	the minimum number of clock ticks to wait.
      *
      * @see	nachos.machine.Timer#getTime()
      */
-    
-    
-    public void waitUntil(long x)
-    {
-	    	boolean intStatus = Machine.interrupt().disable();			
-	    	long MachineTime = Machine.timer().getTime() + x;
-	    	
-	    	WakeThread wakingThread = new WakeThread(MachineTime, KThread.currentThread());
-	    	wakeThreadQ.add(wakingThread);
-	    	KThread.sleep();
-	    	
-	    	Machine.interrupt().restore(intStatus);
-	    		
+    public void waitUntil(long x) {
+        // for now, cheat just to get something working (busy waiting is bad)
+        if (x == 0) {
+            return;
+        }
+        Machine.interrupt().disable();
+        long wakeTime = Machine.timer().getTime() + x;
+        KThread curr = KThread.currentThread();
+        waitQueue.add(new ThreadObject(curr, wakeTime));
+        KThread.sleep();
+        Machine.interrupt().enable();
     }
-    
-    
-    
-    public class WakeThread
-    {
-        	WakeThread(long wakingThread, KThread CurrentThread)
-        	{
-        		MachineTime = wakingThread;				
-        		wakeThread = CurrentThread;		
-        	}
-        		public long MachineTime;				
-        		public KThread wakeThread;
+
+    private Queue<ThreadObject> waitQueue;
+}
+
+class ThreadObject {
+    KThread thread;
+    long wakeTime;
+    public ThreadObject() {
+        wakeTime = 0;
+        thread = null;
     }
-    
-    public static LinkedList<WakeThread> wakeThreadQ;
+    public ThreadObject(KThread t0, long time) {
+        wakeTime = time;
+        thread = t0;
+    }
 }
