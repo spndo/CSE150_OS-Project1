@@ -147,15 +147,14 @@ public class PriorityScheduler extends Scheduler {
 	    // implement me
 	    
 	    
-	    if (thread == null) {
-	    	pickNextThread();
-	    	return null;
+	    ThreadState nextState = pickNextThread();
+	    
+	    if(nextState != null) {
+	    	return nextState.thread;
 	    }
 	    
-	    else {
-	    	acquire(thread);
-	    	return thread;
-	    }
+	    else 
+	    	return null;
 	    
 	}
 
