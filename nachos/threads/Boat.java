@@ -12,7 +12,7 @@ public class Boat
     static Condition2 child_oahu = new Condition2(thread_lock); // lock for children on oahu
     static Condition2 child_molokai = new Condition2(thread_lock); // lock for children on molokai
     static Condition2 adult_oahu = new Condition2(thread_lock); // lock for adult on oahu; since adult can only row to molokai we don't need condition variable for adult on molokai
-    static isPilot = true; // determine current thread is pilot or traveler
+    static isPilot = true; // determine current thread is pilot or traveler; for child thread only 
     static boat_on_oahu = true; // determine where is the boat, true for oahu and false for molokai
     static boolean isGameOver = false; // condition variable to determine whether the game is over
 
