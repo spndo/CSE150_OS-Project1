@@ -83,11 +83,11 @@ public class Boat
         if (boat_on_oahu == false) {
             adult_oahu.sleep();
         }
-        bg.AdultRowToMolokai();
-        adult_on_oahu--;
+        bg.AdultRowToMolokai(); // one adult row to molokai
+        adult_on_oahu--; 
         adult_on_molokai++;
         boat_on_oahu = false;
-        child_molokai.wake();
+        child_molokai.wake(); // wake up a child on molokai; the child should row boat back to oahu
 
         thread_lock.release();
     }
