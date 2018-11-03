@@ -4,18 +4,17 @@ import nachos.ag.BoatGrader;
 public class Boat
 {
     static BoatGrader bg;
-    static int children_on_oahu;
-    static int children_on_molokai;
-    static int adult_on_oahu;
-    static int adult_on_molokai;
-    static Lock thread_lock = new Lock();
-    static Condition2 child_oahu = new Condition2(thread_lock);
-    static Condition2 child_molokai = new Condition2(thread_lock);
-    static Condition2 adult_oahu = new Condition2(thread_lock);
-    static isPilot = true;
-    static isAdultTurn = false;
-    static boat_on_oahu = true;
-    static boolean isGameOver = false;
+    static int children_on_oahu; // number of children on oahu
+    static int children_on_molokai; // number of children on molokai
+    static int adult_on_oahu; // number of adults on oahu
+    static int adult_on_molokai; // number of adults on molokai
+    static Lock thread_lock = new Lock(); // create a lock
+    static Condition2 child_oahu = new Condition2(thread_lock); // lock for children on oahu
+    static Condition2 child_molokai = new Condition2(thread_lock); // lock for children on molokai
+    static Condition2 adult_oahu = new Condition2(thread_lock); // lock for adult on oahu
+    static isPilot = true; // determine current thread is pilot or traveler
+    static boat_on_oahu = true; // determine where is the boat, true for oahu and false for molokai
+    static boolean isGameOver = false; // condition variable to determine whether the game is over
 
     public static void selfTest()
     {
@@ -69,6 +68,7 @@ public class Boat
         
     }
     
+    // constraint: adult can only row to molokai
     static void AdultItinerary()
     {
         /* This is where you should put your solutions. Make calls
@@ -77,7 +77,19 @@ public class Boat
            bg.AdultRowToMolokai();
            indicates that an adult has rowed the boat across to Molokai
         */
-        
+        thread_lock.acquire(); // gain the lock
+
+        // current adult thread goes to sleep when it is not adult's turn and boat is not on oahu
+        if (boat_on_oahu == false) {
+            adult_oahu.sleep();
+        }
+        bg.AdultRowToMolokai();
+        adult_on_oahu--;
+        adult_on_molokai++;
+        boat_on_oahu = false;
+        child_molokai.wake();
+
+        thread_lock.release();
     }
 
     static void ChildItinerary()
