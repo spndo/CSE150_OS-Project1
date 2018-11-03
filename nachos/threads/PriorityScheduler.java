@@ -200,7 +200,7 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public boolean transferPriority;
 
-		protected LinkedList<ThreadState> waitQueue = new LinkedList<>();
+		protected LinkedList<ThreadState> waitQueue = new LinkedList<ThreadState>();
 	}
 
 	/**
@@ -303,6 +303,6 @@ public class PriorityScheduler extends Scheduler {
 
 		protected int priority;
 
-		protected LinkedList<PriorityQueue> donationQueue = new LinkedList<>();
+		protected LinkedList<PriorityQueue> donationQueue = new LinkedList<PriorityQueue>();
 	}
 }
