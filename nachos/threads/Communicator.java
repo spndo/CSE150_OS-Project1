@@ -41,14 +41,14 @@ public class Communicator
     {
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
-    		speaker++;
+    	speaker++;
 	    	while(listener == 0) 
 	    	{
 	    		listenReady.sleep();
 	    	}
     	send = word;
     	speakReady.wakeAll();
-    	listener--;
+    	speaker--;
     	lock.release();
     }
 
@@ -68,7 +68,7 @@ public class Communicator
 		    {
 		    	speakReady.sleep();
 		    }
-	    speaker--;	
+	    listener--;	
 	    lock.release();	
 	    return got;
     }
