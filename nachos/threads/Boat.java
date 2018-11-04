@@ -56,17 +56,17 @@ public class Boat
 
         Runnable childrenCan = new Runnable() {
             public void run() {
-                childItinerary();
+                ChildItinerary();
             }
         };
-        for (int i = 0; i < child; i++) {
+        for (int i = 0; i < children; i++) {
             KThread childThread = new KThread(childrenCan);
             childThread.setName("Children" + i);
-            childTrhead.fork();
+            childThread.fork();
         }
         Runnable adultCan = new Runnable() {
             public void run() {
-                adultItinerary();
+                AdultItinerary();
             }
         };
         for (int i = 0; i < adults; i++) {
