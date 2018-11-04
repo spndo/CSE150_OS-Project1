@@ -53,6 +53,17 @@ public class Boat
 
         // Create threads here. See section 3.4 of the Nachos for Java
         // Walkthrough linked from the projects page.
+        
+        Runnable adultCan = new Runnable() {
+            public void run() {
+                AdultItinerary();
+            }
+        };
+        for (int i = 0; i < adults; i++) {
+            KThread adultThread = new KThread(adultCan);
+            adultThread.setName("Adult" + i);
+            adultThread.fork();
+        }
 
         Runnable childrenCan = new Runnable() {
             public void run() {
@@ -63,16 +74,6 @@ public class Boat
             KThread childThread = new KThread(childrenCan);
             childThread.setName("Children" + i);
             childThread.fork();
-        }
-        Runnable adultCan = new Runnable() {
-            public void run() {
-                AdultItinerary();
-            }
-        };
-        for (int i = 0; i < adults; i++) {
-            KThread adultThread = new KThread(adultCan);
-            adultThread.setName("Adult" + i);
-            adultThread.fork();
         }
 
     }
@@ -127,6 +128,7 @@ public class Boat
                     children_on_molokai++;
                     if (children_on_oahu == 0 && adult_on_oahu == 0) {
                         isGameOver = true;
+                        child_oahu.wake();
                         child_oahu.sleep();
                     } 
                     if (children_on_oahu == 0 && adult_on_oahu != 0) {
