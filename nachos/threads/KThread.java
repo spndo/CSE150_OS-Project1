@@ -33,6 +33,9 @@ public class KThread {
      *
      * @return	the current thread.
      */
+    
+    public ThreadQueue jQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+    
     public static KThread currentThread() {
 	Lib.assertTrue(currentThread != null);
 	return currentThread;
@@ -184,8 +187,19 @@ public class KThread {
     public static void finish() {
 	Lib.debug(dbgThread, "Finishing thread: " + currentThread.toString());
 	
+//	if (readyQueue == null )
+//		readyQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+		
 	Machine.interrupt().disable();
-
+	
+	// as the currentthread finish, need to point to the next thread
+	KThread thread = currentThread.jQueue.nextThread();
+	while (thread != null){
+		thread.ready();
+		thread = currentThread.jQueue.nextThread();
+		// make sure always check the next thread and put it to ready
+	}
+	
 	Machine.autoGrader().finishingCurrentThread();
 
 	Lib.assertTrue(toBeDestroyed == null);
@@ -193,6 +207,8 @@ public class KThread {
 
 
 	currentThread.status = statusFinished;
+	 
+	
 	
 	sleep();
     }
@@ -276,6 +292,25 @@ public class KThread {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
 	Lib.assertTrue(this != currentThread);
+	
+	//make sure it is not empty 
+//	if (readyQueue == null){
+//		readyQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+//	}
+		
+	
+	boolean intStatus = Machine.interrupt().disable();
+	// check if this thread is finished, if it is not, current thread needs to wait
+	if (this.status != statusFinished ){
+		jQueue.waitForAccess(currentThread);
+		currentThread.sleep();
+	}
+	else 
+		//if the thread is finished, return immediately
+		return;
+	Machine.interrupt().restore(intStatus);
+	
+	
 
     }
 
@@ -444,4 +479,6 @@ public class KThread {
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
+    //for joining queue, make sure it is not empty 
+    
 }
