@@ -8,18 +8,19 @@ public class Boat
     static int children_on_molokai; // number of children on molokai
     static int adult_on_oahu; // number of adults on oahu
     static int adult_on_molokai; // number of adults on molokai
-    static Lock thread_lock = new Lock(); // create a lock
-    static Condition2 child_oahu = new Condition2(thread_lock); // lock for children on oahu
-    static Condition2 child_molokai = new Condition2(thread_lock); // lock for children on molokai
-    static Condition2 adult_oahu = new Condition2(thread_lock); // lock for adult on oahu; since adult can only row to molokai we don't need condition variable for adult on molokai
-    static isPilot = true; // determine current thread is pilot or traveler; for child thread only 
-    static boat_on_oahu = true; // determine where is the boat, true for oahu and false for molokai
-    static boolean isGameOver = false; // condition variable to determine whether the game is over
+    static Lock thread_lock; // create a lock
+    static Condition2 child_oahu; // lock for children on oahu
+    static Condition2 child_molokai; // lock for children on molokai
+    static Condition2 adult_oahu; // lock for adult on oahu; since adult can only row to molokai we don't need condition variable for adult on molokai
+    static boolean isDriver; // determine current thread is pilot or traveler; for child thread only
+    static boolean adult_can_row; // determine whether adult can take boat
+    static boolean boat_on_oahu; // determine where is the boat, true for oahu and false for molokai
+    static boolean isGameOver; // condition variable to determine whether the game is over
 
     public static void selfTest()
     {
         BoatGrader b = new BoatGrader();
-        
+
         System.out.println("\n ***Testing Boats with only 2 children***");
         begin(0, 2, b);
 
@@ -41,33 +42,41 @@ public class Boat
         adult_on_oahu = adults;
         children_on_molokai = 0;
         adult_on_molokai = 0;
-        
+        thread_lock = new Lock();
+        child_oahu = new Condition2(thread_lock);
+        child_molokai = new Condition2(thread_lock);
+        adult_oahu = new Condition2(thread_lock);
+        isDriver = true;
+        adult_can_row = false;
+        boat_on_oahu = true;
+        isGameOver = false;
+
         // Create threads here. See section 3.4 of the Nachos for Java
         // Walkthrough linked from the projects page.
 
         Runnable childrenCan = new Runnable() {
-                public void run() {
-                    childItinerary();
-                }
-            };
+            public void run() {
+                childItinerary();
+            }
+        };
         for (int i = 0; i < child; i++) {
             KThread childThread = new KThread(childrenCan);
             childThread.setName("Children" + i);
             childTrhead.fork();
         }
         Runnable adultCan = new Runnable() {
-                public void run() {
-                    adultItinerary();
-                }
-            };
+            public void run() {
+                adultItinerary();
+            }
+        };
         for (int i = 0; i < adults; i++) {
             KThread adultThread = new KThread(adultCan);
             adultThread.setName("Adult" + i);
             adultThread.fork();
         }
-        
+
     }
-    
+
     // constraint: adult can only row to molokai
     static void AdultItinerary()
     {
@@ -80,45 +89,66 @@ public class Boat
         thread_lock.acquire(); // gain the lock
 
         // current adult thread goes to sleep when it is not adult's turn and boat is not on oahu
-        if (boat_on_oahu == false) {
+        if (!adult_can_row && !boat_on_oahu) {
             adult_oahu.sleep();
         }
         bg.AdultRowToMolokai(); // one adult row to molokai
-        adult_on_oahu--; 
+        adult_on_oahu--;
         adult_on_molokai++;
         boat_on_oahu = false;
+        adult_can_row = false;
         child_molokai.wake(); // wake up a child on molokai; the child should row boat back to oahu
 
         thread_lock.release();
     }
 
     static void ChildItinerary()
-	   {
-		   thread_lock.acquire();
-        while(children_on_oahu >= 2 && boat_on_oahu == true)
-        {
-            bg.ChildRowToMolokai;
-            bg.ChildRideToMolokai;
-            children_on_oahu = children_on_oahu- 2;
-			children_on_molokai = children_on_molokai + 2;
-            boat_on_oahu = false;
-                if (children_on_oahu>= 1 && boat_on_oahu == false)
-                {
-                    bg.ChildRowToOahu;
-                    children_on_oahu++;
-					children_on_molokai--;
-                    boat_on_oahu = true;
-                }   
+    {
+        thread_lock.acquire();
+
+        while (!isGameOver) {
+            if (boat_on_oahu) {
+                if (adult_can_row) {
+                    adult_oahu.wake();
+                    child_oahu.sleep();
+                }
+                if (isDriver) {
+                    bg.ChildRowToMolokai();
+                    isDriver = false;
+                    children_on_oahu--;
+                    children_on_molokai++;
+                    child_oahu.wake();
+                    child_molokai.sleep();
+                } else {
+                    bg.AdultRideToMolokai();
+                    isDriver = true;
+                    children_on_oahu--;
+                    children_on_molokai++;
+                    if (children_on_oahu == 0 && adult_on_oahu == 0) {
+                        isGameOver = true;
+                        child_oahu.sleep();
+                    } else if (children_on_oahu == 0 && adult_on_oahu != 0) {
+                        adult_can_row = true;
+                    }
+                    child_molokai.wake();
+                    child_molokai.sleep();
+                }
+            } else {
+                bg.ChildRowToOahu();
+                children_on_molokai--;
+                children_on_oahu++;
+                if (adult_can_row) {
+                    adult_oahu.wake();
+                } else {
+                    child_oahu.wake();
+                }
+                child_oahu.sleep();
+            }
         }
-        while(children_on_oahu == 0 && boat_on_oahu == false && adult_on_oahu > 0)
-        {
-            bg.ChildRowToMolokai;
-            children_on_oahu++;
-			boat_on_oahu = true;
-			AdultItinerary();
-        }
-   	   }
-    
+
+        thread_lock.release();
+    }
+
     static void SampleItinerary()
     {
         // Please note that this isn't a valid solution (you can't fit
@@ -131,5 +161,5 @@ public class Boat
         bg.AdultRideToMolokai();
         bg.ChildRideToMolokai();
     }
-    
+
 }
