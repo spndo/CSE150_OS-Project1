@@ -9,19 +9,22 @@ import nachos.machine.*;
  * be a time when both a speaker and a listener are waiting, because the two
  * threads can be paired off at this point.
  */
-public class Communicator {
+public class Communicator
+{
     /**
      * Allocate a new communicator.
      */
 	
 	Lock lock = new Lock();
-	Condition speakerReady = new Condition(lock);
-	Condition listenerReady = new Condition(lock);
-
-	public int listener = 0, speaker = 0, send;
+	Condition speakReady = new Condition(lock);
+	Condition listenReady = new Condition(lock);
+	public int listener, speaker, send;
 	
-    public Communicator() {
-    
+	
+    public Communicator() 
+    {
+    	listener = 0;
+    	speaker = 0;
     }
 
     /**
@@ -34,16 +37,18 @@ public class Communicator {
      *
      * @param	word	the integer to transfer.
      */
-    public void speak(int word) {
+    public void speak(int word)
+    {
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
-    	speaker++;
-    	while(listener == 0) {
-    		listenerReady.sleep();
-    	}
-    	listener--;
+    		speaker++;
+	    	while(listener == 0) 
+	    	{
+	    		listenReady.sleep();
+	    	}
     	send = word;
-    	speakerReady.wake();
+    	speakReady.wakeAll();
+    	listener--;
     	lock.release();
     }
 
@@ -53,16 +58,18 @@ public class Communicator {
      *
      * @return	the integer transferred.
      */    
-    public int listen() {
-    lock.acquire();
-    listener++;
-	int got = send;
-	listenerReady.wake();
-    while(speaker == 0){
-    	speakerReady.sleep();
-    }
-    speaker--;	
-    lock.release();	
-    return got;
+    public int listen() 
+    {
+    	lock.acquire();
+    	listener++;
+    	int got = send;
+    	listenReady.wake();
+		    while(speaker == 0)
+		    {
+		    	speakReady.sleep();
+		    }
+	    speaker--;	
+	    lock.release();	
+	    return got;
     }
 }
