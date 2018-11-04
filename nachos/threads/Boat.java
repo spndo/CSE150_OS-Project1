@@ -121,6 +121,7 @@ public class Boat
                     child_molokai.sleep();
                 } else {
                     bg.AdultRideToMolokai();
+                    boat_on_oahu = false;
                     isDriver = true;
                     children_on_oahu--;
                     children_on_molokai++;
