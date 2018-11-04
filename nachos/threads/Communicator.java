@@ -18,13 +18,11 @@ public class Communicator
 	Lock lock = new Lock();
 	Condition speakReady = new Condition(lock);
 	Condition listenReady = new Condition(lock);
-	public int listener, speaker, send;
+	public int listener = 0, speaker = 0, send;
 	boolean ready = false;
 	
     public Communicator() 
     {
-    	listener = 0;
-    	speaker = 0;
     }
 
     /**
@@ -46,7 +44,7 @@ public class Communicator
 	    	{
 	    		speakReady.sleep();
 	    	}
-    	send = word;
+    	this.send = word;
     	ready = true;
     	listenReady.wake();
     	speaker--;
@@ -68,7 +66,7 @@ public class Communicator
 		    	listenReady.sleep();
 		    }
 		ready = false;
-		int got = send;
+		int got = this.send;
 	    listener--;	
 	    listenReady.wake();
 	    lock.release();	
