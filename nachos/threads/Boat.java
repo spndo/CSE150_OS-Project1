@@ -96,8 +96,8 @@ public class Boat
         adult_on_oahu--;
         adult_on_molokai++;
         boat_on_oahu = false;
-        adult_can_row = false;
         child_molokai.wake(); // wake up a child on molokai; the child should row boat back to oahu
+        adult_can_row = false;
 
         thread_lock.release();
     }
@@ -128,7 +128,8 @@ public class Boat
                     if (children_on_oahu == 0 && adult_on_oahu == 0) {
                         isGameOver = true;
                         child_oahu.sleep();
-                    } else if (children_on_oahu == 0 && adult_on_oahu != 0) {
+                    } 
+                    if (children_on_oahu == 0 && adult_on_oahu != 0) {
                         adult_can_row = true;
                     }
                     child_molokai.wake();
