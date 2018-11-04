@@ -42,7 +42,7 @@ public class Communicator
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
     	speaker++;
-	    	while(listener == 0 || ready) 
+	    	while(ready) 
 	    	{
 	    		speakReady.sleep();
 	    	}
@@ -63,7 +63,7 @@ public class Communicator
     {
     	lock.acquire();
     	listener++;
-		    while(speaker == 0 || !ready)
+		    while(!ready)
 		    {
 		    	listenReady.sleep();
 		    }
