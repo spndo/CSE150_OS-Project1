@@ -93,8 +93,31 @@ public class Boat
     }
 
     static void ChildItinerary()
-    {
-    }
+	   {
+		   thread_lock.acquire();
+        while(children_on_oahu >= 2 && boat_on_oahu == true)
+        {
+            bg.ChildRowToMolokai;
+            bg.ChildRideToMolokai;
+            children_on_oahu = children_on_oahu- 2;
+			children_on_molokai = children_on_molokai + 2;
+            boat_on_oahu = false;
+                if (children_on_oahu>= 1 && boat_on_oahu == false)
+                {
+                    bg.ChildRowToOahu;
+                    children_on_oahu++;
+					children_on_molokai--;
+                    boat_on_oahu = true;
+                }   
+        }
+        while(children_on_oahu == 0 && boat_on_oahu == false && adult_on_oahu > 0)
+        {
+            bg.ChildRowToMolokai;
+            children_on_oahu++;
+			boat_on_oahu = true;
+			AdultItinerary();
+        }
+   	   }
     
     static void SampleItinerary()
     {
