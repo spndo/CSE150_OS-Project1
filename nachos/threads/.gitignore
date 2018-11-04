@@ -25,3 +25,5 @@
 /SynchList.class
 /ThreadQueue.class
 /ThreadedKernel.class
+/Alarm$WakeThread.class
+/Boat$2.class
