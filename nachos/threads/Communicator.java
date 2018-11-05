@@ -39,13 +39,18 @@ public class Communicator
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
     	this.send = word;
-	    	while(listener == 0) 
+	    	if(listener == 0) 
 	    	{
-	    		listenReady.sleep();
+	    		speaker++;
+	    		speakReady.sleep();
+	    		listener--;
 	    	}
-	    speaker++;
-	    speakReady.wake();
-	    listener--;
+	    	else
+	    	{
+	    		speaker++;
+	    		listenReady.wake();
+	    		listener--;
+	    	}
     	lock.release();
     }
 
@@ -58,16 +63,21 @@ public class Communicator
     public int listen() 
     {
     	lock.acquire();
-		    while(speaker == 0)
+		    if(speaker == 0)
 		    {
+		    	listener++;
 		    	speakReady.sleep();
+		    	speaker--;
 		    }
-		listener++;
-		listenReady.wake();
-		speaker--;
-		int got = this.send;
+		    else
+		    {
+		    	listener++;
+		    	speakReady.wake();
+		    	speaker--;
+		    }
+		//int got = this.send;
 	    lock.release();	
-	    return got;
+	    return this.send;
     }
 }
 
