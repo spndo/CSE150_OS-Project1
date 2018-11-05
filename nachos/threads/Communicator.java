@@ -9,11 +9,21 @@ import nachos.machine.*;
  * be a time when both a speaker and a listener are waiting, because the two
  * threads can be paired off at this point.
  */
-public class Communicator {
+public class Communicator
+{
     /**
      * Allocate a new communicator.
      */
-    public Communicator() {
+
+    public Communicator() 
+    {
+    	lock = new Lock();
+    	speakReady = new Condition(lock);
+    	listenReady = new Condition(lock);
+    	ready = new Condition(lock);
+    	listener = 0;
+    	//speaker = 0;
+    	readyup = false;
     }
 
     /**
@@ -26,7 +36,33 @@ public class Communicator {
      *
      * @param	word	the integer to transfer.
      */
-    public void speak(int word) {
+    public void speak(int word)
+    {
+    	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
+    	lock.acquire();
+    	
+	    	while(readyup) 
+	    	{
+	    		//speaker++;
+	    		speakReady.sleep();
+	    		//listener--;
+	    	}
+	    readyup = true;
+	    this.send = word;
+	    
+	    	while(listener == 0)
+	    	{
+	    		//speaker++;
+	    		ready.sleep();
+	    		//listener--;
+	    		
+	    	}
+	    
+	    listenReady.wake();
+	    ready.sleep();
+	    readyup = false;
+	    speakReady.wake();
+    	lock.release();
     }
 
     /**
@@ -35,7 +71,56 @@ public class Communicator {
      *
      * @return	the integer transferred.
      */    
-    public int listen() {
-	return 0;
+    public int listen() 
+    {
+    	lock.acquire();
+    	listener++;
+    	
+		    if(listener == 1 && readyup)
+		    {
+		    	//listener++;
+		    	ready.wake();
+		    	//speaker--;
+		    }
+		    
+		listenReady.sleep();
+		ready.wake();
+		listener--;
+		//speakReady.wake();
+		//speaker--;
+		    	
+		//int got = this.send;
+	    lock.release();	
+	    return this.send;
     }
+    
+    private Lock lock;
+    private Condition speakReady;
+    private Condition listenReady;
+    private Condition ready;
+    private int send;
+    //private int speaker;
+    private int listener;
+    private boolean readyup;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

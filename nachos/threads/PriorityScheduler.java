@@ -5,6 +5,7 @@ import nachos.machine.*;
 import java.util.TreeSet;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 /**
  * A scheduler that chooses threads based on their priorities.
@@ -32,7 +33,11 @@ public class PriorityScheduler extends Scheduler {
      */
     public PriorityScheduler() {
     }
-    
+    //public LinkedList<KThread> waitQueue = new LinkedList<KThread>();
+    // ThreadState lockHolder = null;
+//     public static final int invalidPriority = -1;
+// 	public int effectivePriority = -1;
+	
     /**
      * Allocate a new priority thread queue.
      *
@@ -126,6 +131,10 @@ public class PriorityScheduler extends Scheduler {
      * A <tt>ThreadQueue</tt> that sorts threads by priority.
      */
     protected class PriorityQueue extends ThreadQueue {
+    
+    public LinkedList<KThread> waitQueue = new LinkedList<KThread>();
+    ThreadState lockHolder = null;
+    
 	PriorityQueue(boolean transferPriority) {
 	    this.transferPriority = transferPriority;
 	}
@@ -143,7 +152,25 @@ public class PriorityScheduler extends Scheduler {
 	public KThread nextThread() {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me
-	    return null;
+	    //if there is a header in the holder
+	    //prepare the next thread
+	    if (lockHolder != null){
+	    	lockHolder.donation.remove(this);
+//	    	effectivePriority = invalidPriority;
+//			getEffectivePriority();
+	    	//update the new priority after remove the thread
+	    	lockHolder.P();
+	    	
+	    }
+	    //grab the next thread and gives it to access 
+	    ThreadState nextstate = pickNextThread();
+	    if (nextstate != null){
+	    	nextstate.acquire(this);
+	    	//this.ready();
+	    	return nextstate.thread;
+	    }
+	    else
+	    	return null; 
 	}
 
 	/**
@@ -154,8 +181,36 @@ public class PriorityScheduler extends Scheduler {
 	 *		return.
 	 */
 	protected ThreadState pickNextThread() {
-	    // implement me
-	    return null;
+//		if (waitQueue.isEmpty())
+//			return null;
+//		
+//		KThread thread = waitQueue.removeFirst();
+		
+		KThread thread = null ;
+		
+		int maxP = -100;
+		//loop through whole wait queue and find the thread has max priority
+		//that thread will be the next thread
+		if (waitQueue == null)
+			return null;
+		//if(waitQueue!= null){
+			for (KThread t:waitQueue){
+				int effectiveP = getEffectivePriority(t);
+				if (t == null || effectiveP>maxP){
+					thread = t;
+					maxP = effectiveP;
+				}
+			}
+		//}
+		// else {
+// 			return null;
+// 		}
+			// if there is no thread in the waiting queue
+			if (thread == null)
+				return null;
+// 			
+			return  getThreadState(thread);
+		
 	}
 	
 	public void print() {
@@ -168,6 +223,7 @@ public class PriorityScheduler extends Scheduler {
 	 * threads to the owning thread.
 	 */
 	public boolean transferPriority;
+	
     }
 
     /**
@@ -184,6 +240,10 @@ public class PriorityScheduler extends Scheduler {
 	 *
 	 * @param	thread	the thread this state belongs to.
 	 */
+    	
+    //public LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+    public LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+    
 	public ThreadState(KThread thread) {
 	    this.thread = thread;
 	    
@@ -205,8 +265,43 @@ public class PriorityScheduler extends Scheduler {
 	 * @return	the effective priority of the associated thread.
 	 */
 	public int getEffectivePriority() {
-	    // implement me
-	    return priority;
+	    //the actual function that calcuate effective priority when 
+	    return getEffectivePriority(new HashSet<ThreadState>());
+	}
+	
+	private int getEffectivePriority(HashSet<ThreadState> ep){
+		//check if the priority if is the set already,
+		//since set has no duplicate numbers 
+		//this helps reduce calculation
+		if (ep.contains(this)){
+			return priority;
+		}
+		//store the new priority 
+		effectivePriority = priority;
+		
+		for (PriorityQueue q : donation){
+			//if q needs to pass the priority 
+			if (q.transferPriority){
+				for (KThread k : q.waitQueue){
+					//put into the set 
+					ep.add(this);
+					//get the effective p
+					int p = getThreadState(k).getEffectivePriority(ep);
+					//take out the thread in case of confilict
+					ep.remove (this);
+					if (p>effectivePriority)
+						//update effectivePriority
+						effectivePriority = p;
+					
+				}
+			}
+		}
+	
+		
+		return effectivePriority;
+		
+		
+		
 	}
 
 	/**
@@ -217,10 +312,15 @@ public class PriorityScheduler extends Scheduler {
 	public void setPriority(int priority) {
 	    if (this.priority == priority)
 		return;
-	    
+	    else{
 	    this.priority = priority;
 	    
 	    // implement me
+	    //set to the default and and the new one
+// 	    effectivePriority = invalidPriority;
+// 		getEffectivePriority();
+	    P();
+	    }
 	}
 
 	/**
@@ -237,6 +337,16 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void waitForAccess(PriorityQueue waitQueue) {
 	    // implement me
+		//add thread into waiting queue
+		waitQueue.waitQueue.add(thread);
+		//check the first element of the waitqueue
+		//if waitqueue is empty, dont need to wait 
+		if (waitQueue.lockHolder == null)
+			return;
+//		effectivePriority = invalidPriority;
+//		getEffectivePriority();
+		
+		waitQueue.lockHolder.P();
 	}
 
 	/**
@@ -251,11 +361,33 @@ public class PriorityScheduler extends Scheduler {
 	 */
 	public void acquire(PriorityQueue waitQueue) {
 	    // implement me
+		//remove the thread that wants to access from waiting queue
+		waitQueue.waitQueue.remove(thread);
+		//set this thread 
+		waitQueue.lockHolder = this;
+		
+		donation.add(waitQueue);
+		//
+		effectivePriority = invalidPriority;
+		getEffectivePriority();
+		
+		
 	}	
+	
+	public void P(){
+		effectivePriority = invalidPriority;
+		getEffectivePriority();
+	}
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
 	/** The priority of the associated thread. */
-	protected int priority;
+	protected int priority=priorityDefault;
+	protected int effectivePriority = -1;
+	protected static final int invalidPriority = -1;
+	//protected LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+	
+	
+	
     }
 }

@@ -33,6 +33,9 @@ public class KThread {
      *
      * @return	the current thread.
      */
+    
+    public ThreadQueue jQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+    
     public static KThread currentThread() {
 	Lib.assertTrue(currentThread != null);
 	return currentThread;
@@ -477,5 +480,5 @@ public class KThread {
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;
     //for joining queue, make sure it is not empty 
-    private ThreadQueue jQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+    
 }
