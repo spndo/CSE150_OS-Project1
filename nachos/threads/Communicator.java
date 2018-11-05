@@ -17,13 +17,13 @@ public class Communicator
 
     public Communicator() 
     {
-    	lock = new Lock();
-    	speakReady = new Condition(lock);
-    	listenReady = new Condition(lock);
-    	ready = new Condition(lock);
-    	listener = 0;
+    	lock = new Lock(); // create public lock
+    	speakReady = new Condition(lock); // public speaker lock
+    	listenReady = new Condition(lock); // public listener lock
+    	ready = new Condition(lock); // public conditional lock
+    	listener = 0; // listener count initialize
     	//speaker = 0;
-    	readyup = false;
+    	readyup = false; // public boolean to check if ready to pass
     }
 
     /**
@@ -40,16 +40,18 @@ public class Communicator
     {
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
-    	
+    		// check if listener is ready then put speaker to sleep
 	    	while(readyup) 
 	    	{
 	    		//speaker++;
 	    		speakReady.sleep();
 	    		//listener--;
 	    	}
-	    readyup = true;
-	    this.send = word;
 	    
+	    this.send = word; // store word
+	    readyup = true; // set ready as true
+	    
+	    	// if listener not ready, then ready to sleep
 	    	while(listener == 0)
 	    	{
 	    		//speaker++;
@@ -76,6 +78,7 @@ public class Communicator
     	lock.acquire();
     	listener++;
     	
+    		// if listener waiting and ready called, ready wake up, or listen sleep
 		    if(listener == 1 && readyup)
 		    {
 		    	//listener++;
@@ -94,14 +97,14 @@ public class Communicator
 	    return this.send;
     }
     
-    private Lock lock;
-    private Condition speakReady;
-    private Condition listenReady;
-    private Condition ready;
-    private int send;
+    private Lock lock; // create lock
+    private Condition speakReady; // create speaking condition
+    private Condition listenReady; // create listening condition
+    private Condition ready; // create ready condition
+    private int send; // to store word
     //private int speaker;
-    private int listener;
-    private boolean readyup;
+    private int listener; // to count when listener is called 
+    private boolean readyup; // to track if ready to pass condition
 }
 
 
