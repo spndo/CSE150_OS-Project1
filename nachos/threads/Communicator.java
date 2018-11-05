@@ -41,7 +41,7 @@ public class Communicator
     	speaker++;
 	    	while(listener == 0) 
 	    	{
-	    		listenReady.sleep();
+	    		speakReady.sleep();
 	    	}
 	    listener--;
     	this.send = word;
@@ -61,7 +61,7 @@ public class Communicator
     	listener++;
 		    while(speaker == 0)
 		    {
-		    	speakReady.sleep();
+		    	listenReady.sleep();
 		    }
 		speaker--;
 		int got = this.send;
