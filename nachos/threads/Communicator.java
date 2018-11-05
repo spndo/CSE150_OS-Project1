@@ -15,16 +15,13 @@ public class Communicator
      * Allocate a new communicator.
      */
 	
-	private Lock lock;
-	private Condition speakReady;
-	private Condition listenReady;
-	private int send, speaker,listener;
+	Lock lock = new Lock();
+	int send, speaker, listener;
+	Condition speakReady = new Condition(lock);
+	Condition listenReady = new Condition(lock);
 	
     public Communicator() 
     {
-    	Lock lock = new Lock();
-    	Condition speakReady = new Condition(lock);
-    	Condition listenReady = new Condition(lock);
     	listener = 0;
     	speaker = 0;
     }
