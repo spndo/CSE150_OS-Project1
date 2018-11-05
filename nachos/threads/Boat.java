@@ -90,7 +90,7 @@ public class Boat
         thread_lock.acquire(); // gain the lock
 
         // current adult thread goes to sleep when it is not adult's turn and boat is not on oahu
-        if (!adult_can_row && !boat_on_oahu) {
+        if (!adult_can_row && !boat_on_oahu && child_on_oahu%2 == 0) {
             adult_oahu.sleep();
         }
         bg.AdultRowToMolokai(); // one adult row to molokai
@@ -110,16 +110,16 @@ public class Boat
         while (!isGameOver) {
             if (boat_on_oahu) {
                 if (adult_can_row) {
-                    adult_oahu.wake();
                     child_oahu.sleep();
+                    adult_oahu.wake();
                 }
-                if (isDriver) {
+                if (isDriver && child_on_oahu > 1) {
                     bg.ChildRowToMolokai();
                     isDriver = false;
                     children_on_oahu--;
                     children_on_molokai++;
-                    child_oahu.wake();
                     child_molokai.sleep();
+                    child_oahu.wakeAll();
                 } else {
                     bg.AdultRideToMolokai();
                     boat_on_oahu = false;
@@ -128,24 +128,20 @@ public class Boat
                     children_on_molokai++;
                     if (children_on_oahu == 0 && adult_on_oahu == 0) {
                         isGameOver = true;
-                        child_oahu.wake();
-                        child_oahu.sleep();
+                        child_molokai.sleep();
                     } 
                     if (children_on_oahu == 0 && adult_on_oahu != 0) {
                         adult_can_row = true;
                     }
-                    child_molokai.wake();
-                    child_molokai.sleep();
+                    child_oahu.sleep();
                 }
             } else {
                 bg.ChildRowToOahu();
                 children_on_molokai--;
                 children_on_oahu++;
-                if (adult_can_row) {
-                    adult_oahu.wake();
-                } else {
-                    child_oahu.wake();
-                }
+                adult_oahu.wakeAll();
+                child_oahu.wakeAll();
+                boat_on_oahu = true;
                 child_oahu.sleep();
             }
         }
