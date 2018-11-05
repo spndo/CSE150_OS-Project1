@@ -19,7 +19,6 @@ public class Communicator
 	Condition speakReady = new Condition(lock);
 	Condition listenReady = new Condition(lock);
 	public int listener = 0, speaker = 0, send;
-	boolean ready = false;
 	
     public Communicator() 
     {
@@ -40,14 +39,13 @@ public class Communicator
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
     	speaker++;
-	    	while(ready) 
+	    	while(listener == 0) 
 	    	{
-	    		speakReady.sleep();
+	    		listenReady.sleep();
 	    	}
+	    listener--;
     	this.send = word;
-    	ready = true;
-    	listenReady.wake();
-    	speaker--;
+    	speakReady.wake();
     	lock.release();
     }
 
@@ -61,13 +59,12 @@ public class Communicator
     {
     	lock.acquire();
     	listener++;
-		    while(!ready)
+		    while(speaker == 0)
 		    {
-		    	listenReady.sleep();
+		    	speakReady.sleep();
 		    }
-		ready = false;
+		speaker--;
 		int got = this.send;
-	    listener--;	
 	    listenReady.wake();
 	    lock.release();	
 	    return got;
