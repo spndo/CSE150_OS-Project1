@@ -20,6 +20,7 @@ public class Communicator
     	lock = new Lock();
     	speakReady = new Condition(lock);
     	listenReady = new Condition(lock);
+    	order = new Condition(lock);
     	listener = 0;
     	speaker = 0;
     }
@@ -49,6 +50,7 @@ public class Communicator
 	    	{
 	    		speaker++;
 	    		listenReady.wake();
+	    		order.sleep();
 	    		listener--;
 	    	}
     	lock.release();
@@ -73,6 +75,7 @@ public class Communicator
 		    {
 		    	listener++;
 		    	speakReady.wake();
+		    	order.wake();
 		    	speaker--;
 		    }
 		//int got = this.send;
@@ -82,6 +85,7 @@ public class Communicator
     private Lock lock;
     private Condition speakReady;
     private Condition listenReady;
+    private Condition order;
     private int send;
     private int speaker;
     private int listener;
