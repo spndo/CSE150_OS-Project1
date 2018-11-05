@@ -1,5 +1,7 @@
 package nachos.threads;
 
+import java.util.LinkedList;
+
 import nachos.machine.*;
 
 /**
@@ -18,7 +20,8 @@ public class Communicator
 	Lock lock = new Lock();
 	Condition speakReady = new Condition(lock);
 	Condition listenReady = new Condition(lock);
-	public int listener = 0, speaker = 0, send;
+	public int listener = 0, speaker = 0;
+	public LinkedList<Integer> send;
 	
     public Communicator() 
     {
@@ -38,7 +41,7 @@ public class Communicator
     {
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
-    	this.send = word;
+    	send.add(word);
 	    	if(listener == 0) 
 	    	{
 	    		speaker++;
@@ -77,7 +80,7 @@ public class Communicator
 		    }
 		//int got = this.send;
 	    lock.release();	
-	    return this.send;
+	    return send.removeLast();
     }
 }
 
