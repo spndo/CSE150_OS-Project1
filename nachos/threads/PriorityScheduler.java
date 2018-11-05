@@ -153,6 +153,7 @@ public class PriorityScheduler extends Scheduler {
 	    Lib.assertTrue(Machine.interrupt().disabled());
 	    // implement me
 	    //if there is a header in the holder
+	    //prepare the next thread
 	    if (lockHolder != null){
 	    	lockHolder.donation.remove(this);
 //	    	effectivePriority = invalidPriority;
@@ -161,9 +162,11 @@ public class PriorityScheduler extends Scheduler {
 	    	lockHolder.P();
 	    	
 	    }
+	    //grab the next thread and gives it to access 
 	    ThreadState nextstate = pickNextThread();
 	    if (nextstate != null){
 	    	nextstate.acquire(this);
+	    	//this.ready();
 	    	return nextstate.thread;
 	    }
 	    else
@@ -188,7 +191,9 @@ public class PriorityScheduler extends Scheduler {
 		int maxP = -100;
 		//loop through whole wait queue and find the thread has max priority
 		//that thread will be the next thread
-		
+		if (waitQueue == null)
+			return null;
+		//if(waitQueue!= null){
 			for (KThread t:waitQueue){
 				int effectiveP = getEffectivePriority(t);
 				if (t == null || effectiveP>maxP){
@@ -196,10 +201,14 @@ public class PriorityScheduler extends Scheduler {
 					maxP = effectiveP;
 				}
 			}
-			
+		//}
+		// else {
+// 			return null;
+// 		}
+			// if there is no thread in the waiting queue
 			if (thread == null)
 				return null;
-			
+// 			
 			return  getThreadState(thread);
 		
 	}
@@ -233,6 +242,8 @@ public class PriorityScheduler extends Scheduler {
 	 */
     	
     //public LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+    public LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+    
 	public ThreadState(KThread thread) {
 	    this.thread = thread;
 	    
@@ -285,22 +296,6 @@ public class PriorityScheduler extends Scheduler {
 				}
 			}
 		}
-		PriorityQueue q = (PriorityQueue) thread.jQueue;
-		
-		if (q.transferPriority){
-			for (KThread k : q.waitQueue){
-				//put into the set 
-				ep.add(this);
-				//get the effective p
-				int p = getThreadState(k).getEffectivePriority(ep);
-				//take out the thread in case of confilict
-				ep.remove (this);
-				if (p>effectivePriority)
-					//update effectivePriority
-					effectivePriority = p;
-				
-			}
-		}
 	
 		
 		return effectivePriority;
@@ -317,13 +312,15 @@ public class PriorityScheduler extends Scheduler {
 	public void setPriority(int priority) {
 	    if (this.priority == priority)
 		return;
-	    
+	    else{
 	    this.priority = priority;
 	    
 	    // implement me
 	    //set to the default and and the new one
+// 	    effectivePriority = invalidPriority;
+// 		getEffectivePriority();
 	    P();
-	    
+	    }
 	}
 
 	/**
@@ -370,8 +367,9 @@ public class PriorityScheduler extends Scheduler {
 		waitQueue.lockHolder = this;
 		
 		donation.add(waitQueue);
-		
-		P();
+		//
+		effectivePriority = invalidPriority;
+		getEffectivePriority();
 		
 		
 	}	
@@ -385,9 +383,9 @@ public class PriorityScheduler extends Scheduler {
 	protected KThread thread;
 	/** The priority of the associated thread. */
 	protected int priority=priorityDefault;
-	protected int effectivePriority = invalidPriority;
+	protected int effectivePriority = -1;
 	protected static final int invalidPriority = -1;
-	protected LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+	//protected LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
 	
 	
 	
