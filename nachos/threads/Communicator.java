@@ -8,87 +8,119 @@ import nachos.machine.*;
  * and multiple threads can be waiting to <i>listen</i>. But there should never
  * be a time when both a speaker and a listener are waiting, because the two
  * threads can be paired off at this point.
- * 
- * @author Jeremy Rios
- * 
  */
-public class Communicator {
+public class Communicator
+{
     /**
      * Allocate a new communicator.
      */
-    public Communicator() {
-	handShakeInProgress = false;
-	waitingToListenQueueSize = 0;
-	lock = new Lock();
-	waitingToShakeHands = new Condition2(lock);
-	waitingToSpeak = new Condition2(lock);
-	waitingToListen = new Condition2(lock);
+
+    public Communicator() 
+    {
+    	lock = new Lock();
+    	speakReady = new Condition(lock);
+    	listenReady = new Condition(lock);
+    	ready = new Condition(lock);
+    	listener = 0;
+    	//speaker = 0;
+    	readyup = false;
     }
 
     /**
      * Wait for a thread to listen through this communicator, and then transfer
      * <i>word</i> to the listener.
-     * <p/>
-     * <p/>
+     *
+     * <p>
      * Does not return until this thread is paired up with a listening thread.
      * Exactly one listener should receive <i>word</i>.
      *
-     * @param    word    the integer to transfer.
+     * @param	word	the integer to transfer.
      */
-    public void speak(int word) {
-	lock.acquire();
-	while(handShakeInProgress){
-		waitingToSpeak.sleep();
-	}
-	
-	handShakeInProgress = true;
-        this.message = word;
-	
-	while(waitingToListenQueueSize == 0){
-		waitingToShakeHands.sleep();
-	}
-	
-	waitingToListen.wake();
-	waitingToShakeHands.sleep();
-	handShakeInProgress = false;
-	waitingToSpeak.wake();
-	lock.release();
+    public void speak(int word)
+    {
+    	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
+    	lock.acquire();
+    	
+	    	while(readyup) 
+	    	{
+	    		//speaker++;
+	    		speakReady.sleep();
+	    		//listener--;
+	    	}
+	    readyup = true;
+	    this.send = word;
+	    
+	    	while(listener == 0)
+	    	{
+	    		//speaker++;
+	    		ready.sleep();
+	    		//listener--;
+	    		
+	    	}
+	    
+	    listenReady.wake();
+	    ready.sleep();
+	    readyup = false;
+	    speakReady.wake();
+    	lock.release();
     }
 
     /**
      * Wait for a thread to speak through this communicator, and then return
      * the <i>word</i> that thread passed to <tt>speak()</tt>.
      *
-     * @return the integer transferred.
-     */
-    public int listen() {
-        lock.acquire();
-	waitingToListenQueueSize++;
-	
-	if(waitingToListenQueueSize == 1 && handShakeInProgress){
-		waitingToShakeHands.wake();
-	}
-	
-	waitingToListen.sleep();
-	waitingToShakeHands.wake();
-	waitingToListenQueueSize--;
-        int myMessage = this.message;
-	lock.release();
-	return myMessage;
+     * @return	the integer transferred.
+     */    
+    public int listen() 
+    {
+    	lock.acquire();
+    	listener++;
+    	
+		    if(listener == 1 && readyup)
+		    {
+		    	//listener++;
+		    	ready.wake();
+		    	//speaker--;
+		    }
+		    
+		listenReady.sleep();
+		ready.wake();
+		listener--;
+		//speakReady.wake();
+		//speaker--;
+		    	
+		//int got = this.send;
+	    lock.release();	
+	    return this.send;
     }
-
-    public int getQueueSize(){
-	return waitingToListenQueueSize;
-    }
-  
     
-
-    private boolean handShakeInProgress;
-    private int waitingToListenQueueSize;
-    private int message;
     private Lock lock;
-    private Condition2 waitingToShakeHands;
-    private Condition2 waitingToSpeak;
-    private Condition2 waitingToListen;
-    
+    private Condition speakReady;
+    private Condition listenReady;
+    private Condition ready;
+    private int send;
+    //private int speaker;
+    private int listener;
+    private boolean readyup;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

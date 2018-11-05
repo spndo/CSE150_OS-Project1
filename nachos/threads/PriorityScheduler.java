@@ -34,9 +34,9 @@ public class PriorityScheduler extends Scheduler {
     public PriorityScheduler() {
     }
     //public LinkedList<KThread> waitQueue = new LinkedList<KThread>();
-    ThreadState lockHolder = null;
-    public static final int invalidPriority = -1;
-	public int effectivePriority = -1;
+    // ThreadState lockHolder = null;
+//     public static final int invalidPriority = -1;
+// 	public int effectivePriority = -1;
 	
     /**
      * Allocate a new priority thread queue.
@@ -155,8 +155,10 @@ public class PriorityScheduler extends Scheduler {
 	    //if there is a header in the holder
 	    if (lockHolder != null){
 	    	lockHolder.donation.remove(this);
-	    	effectivePriority = invalidPriority;
-			getEffectivePriority();
+//	    	effectivePriority = invalidPriority;
+//			getEffectivePriority();
+	    	//update the new priority after remove the thread
+	    	lockHolder.P();
 	    	
 	    }
 	    ThreadState nextstate = pickNextThread();
@@ -230,7 +232,7 @@ public class PriorityScheduler extends Scheduler {
 	 * @param	thread	the thread this state belongs to.
 	 */
     	
-    public LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
+    //public LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
 	public ThreadState(KThread thread) {
 	    this.thread = thread;
 	    
@@ -320,8 +322,7 @@ public class PriorityScheduler extends Scheduler {
 	    
 	    // implement me
 	    //set to the default and and the new one
-	    effectivePriority = invalidPriority;
-		getEffectivePriority();
+	    P();
 	    
 	}
 
@@ -345,8 +346,10 @@ public class PriorityScheduler extends Scheduler {
 		//if waitqueue is empty, dont need to wait 
 		if (waitQueue.lockHolder == null)
 			return;
-		effectivePriority = invalidPriority;
-		getEffectivePriority();
+//		effectivePriority = invalidPriority;
+//		getEffectivePriority();
+		
+		waitQueue.lockHolder.P();
 	}
 
 	/**
@@ -368,16 +371,23 @@ public class PriorityScheduler extends Scheduler {
 		
 		donation.add(waitQueue);
 		
-		effectivePriority = invalidPriority;
-		getEffectivePriority();
+		P();
 		
 		
 	}	
+	
+	public void P(){
+		effectivePriority = invalidPriority;
+		getEffectivePriority();
+	}
 
 	/** The thread with which this object is associated. */	   
 	protected KThread thread;
 	/** The priority of the associated thread. */
-	protected int priority;
+	protected int priority=priorityDefault;
+	protected int effectivePriority = invalidPriority;
+	protected static final int invalidPriority = -1;
+	protected LinkedList<PriorityQueue> donation = new LinkedList<PriorityQueue>();
 	
 	
 	

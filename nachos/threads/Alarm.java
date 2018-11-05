@@ -2,6 +2,12 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.LinkedList;
+
+import java.util.Iterator;
+
+import java.util.Queue;
+
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
@@ -15,9 +21,12 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
-	Machine.timer().setInterruptHandler(new Runnable() {
-		public void run() { timerInterrupt(); }
+    	Machine.timer().setInterruptHandler(new Runnable() {
+    		public void run() {
+    			timerInterrupt();
+    		}
 	    });
+    	wakeThreadQ = new LinkedList<wakeThread>();
     }
 
     /**
@@ -27,7 +36,22 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+    	boolean intStatus = Machine.interrupt().disable();
+    	
+    	Iterator<wakeThread> it = wakeThreadQ.iterator(); 		// iterator allows for simple traversal of list
+    	
+    	while (it.hasNext()) { 
+    		wakeThread temp = it.next(); 						
+    		if(temp.machineTime <= Machine.timer().getTime()) { // if waited long enough
+    			it.remove(); 									// remove thread from queue
+    			temp.wakingThread.ready();						//wake thread
+    			
+    		}
+    		
+    	}
+    	
+    	Machine.interrupt().restore(intStatus);
+    	
     }
 
     /**
@@ -45,9 +69,40 @@ public class Alarm {
      * @see	nachos.machine.Timer#getTime()
      */
     public void waitUntil(long x) {
-	// for now, cheat just to get something working (busy waiting is bad)
-	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+    	
+    	if(x <= 0) {
+    		return;
+    	}
+    	
+    	boolean intStatus = Machine.interrupt().disable();		
+    	
+    	wakeThread wakingThread = new wakeThread(KThread.currentThread(), Machine.timer().getTime() + x); // set wakeThread class variable as wakingThread
+   
+    	wakeThreadQ.add(wakingThread);	// add wakingThread to our list of threads
+    	KThread.sleep();				
+    	
+    	Machine.interrupt().restore(intStatus);
+    		
+    
     }
+    
+    private Queue<wakeThread> wakeThreadQ;
+    
+    public class wakeThread {
+    	private KThread wakingThread;
+    	private long machineTime;
+
+    	
+    	public wakeThread(KThread thread, long mTime){
+    		this.wakingThread = thread;
+    		this.machineTime = mTime;
+    	}
+    	
+    
+    	
+    
+    }
+    
+   
+    
 }
