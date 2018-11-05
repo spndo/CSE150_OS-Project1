@@ -1,5 +1,7 @@
 package nachos.threads;
 
+import java.util.LinkedList;
+
 import nachos.machine.*;
 
 /**
@@ -22,6 +24,7 @@ public class Condition2 {
      */
     public Condition2(Lock conditionLock) {
 	this.conditionLock = conditionLock;
+	waitingQueue = new LinkedList<KThread>(); // declare the linked list to store all sleeping thread
     }
 
     /**
@@ -32,10 +35,22 @@ public class Condition2 {
      */
     public void sleep() {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+	    
+	// disable interrupts so the following codes can be operated atomically
+	// save the previous status, because we need it when we enable interrups again
+	boolean preStatus = Machine.interrupt().disable();
+	
+	conditionLock.release(); // release the lock
+	
+	// gain the current thread, then put it into waiting queue and make it to sleep
+	KThread currThread = KThread.currentThread();
+	waitingQueue.addLast(currThread);
+	currThread.sleep();
+	    
+	Machine.interrupt().restore(preStatus); // enable interrups, restore back to the previous status
+	
+	conditionLock.acquire(); // get the lock back since the thread is wake up
 
-	conditionLock.release();
-
-	conditionLock.acquire();
     }
 
     /**
@@ -44,6 +59,21 @@ public class Condition2 {
      */
     public void wake() {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+	
+	// disable interrupts so the following codes will run atomically
+	boolean preStatus = Machine.interrupt().disable();
+	
+	// check the waiting queue has at lease one thread
+	// only wake up one (the first) thread from the waiting queue
+	if (!waitingQueue.isEmpty()) {
+		// take out the first thread in the waiting queue and make it ready to run
+		KThread firstThread = waitingQueue.getFirst();
+		waitingQueue.removeFirst();
+		firstThread.ready();
+	}
+	
+	Machine.interrupt().restore(preStatus); // enable interrups, restore back to the previous status
+	
     }
 
     /**
@@ -52,7 +82,23 @@ public class Condition2 {
      */
     public void wakeAll() {
 	Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+	
+	// disable interrupts so the following codes will run atomically
+	boolean preStatus = Machine.interrupt().disable();
+	
+	// check the waiting queue has at lease one thread
+	// waking up all thread in the waiting queue
+	while (!waitingQueue.isEmpty()) {
+		// take out the first thread in the waiting queue and make it ready to run
+		KThread firstThread = waitingQueue.getFirst();
+		waitingQueue.removeFirst();
+		firstThread.ready();
+	}
+	
+	Machine.interrupt().restore(preStatus); // enable interrups, restore back to the previous status
+	
     }
 
     private Lock conditionLock;
+    private LinkedList<KThread> waitingQueue; // create a linked list to store all sleeping threads
 }
