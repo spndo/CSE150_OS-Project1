@@ -14,14 +14,12 @@ public class Communicator
     /**
      * Allocate a new communicator.
      */
-	
-	Lock lock = new Lock();
-	int send, speaker, listener;
-	Condition speakReady = new Condition(lock);
-	Condition listenReady = new Condition(lock);
-	
+
     public Communicator() 
     {
+    	lock = new Lock();
+    	speakReady = new Condition(lock);
+    	listenReady = new Condition(lock);
     	listener = 0;
     	speaker = 0;
     }
@@ -81,6 +79,12 @@ public class Communicator
 	    lock.release();	
 	    return this.send;
     }
+    private Lock lock;
+    private Condition speakReady;
+    private Condition listenReady;
+    private int send;
+    private int speaker;
+    private int listener;
 }
 
 
