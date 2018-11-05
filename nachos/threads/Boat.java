@@ -90,7 +90,7 @@ public class Boat
         thread_lock.acquire(); // gain the lock
 
         // current adult thread goes to sleep when it is not adult's turn and boat is not on oahu
-        if (!adult_can_row && !boat_on_oahu && child_on_oahu%2 == 0) {
+        if (!adult_can_row && !boat_on_oahu && children_on_oahu%2 == 0) {
             adult_oahu.sleep();
         }
         bg.AdultRowToMolokai(); // one adult row to molokai
@@ -113,7 +113,7 @@ public class Boat
                     child_oahu.sleep();
                     adult_oahu.wake();
                 }
-                if (isDriver && child_on_oahu > 1) {
+                if (isDriver && children_on_oahu > 1) {
                     bg.ChildRowToMolokai();
                     isDriver = false;
                     children_on_oahu--;
