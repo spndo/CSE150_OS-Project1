@@ -20,9 +20,10 @@ public class Communicator
     	lock = new Lock();
     	speakReady = new Condition(lock);
     	listenReady = new Condition(lock);
-    	order = new Condition(lock);
+    	ready = new Condition(lock);
     	listener = 0;
-    	speaker = 0;
+    	//speaker = 0;
+    	readyup = false;
     }
 
     /**
@@ -39,20 +40,28 @@ public class Communicator
     {
     	//boolean intStatus = Machine.interrupt().disable(); // disable interrupts (Like in KThread)
     	lock.acquire();
-    	this.send = word;
-	    	if(listener == 0) 
+    	
+	    	while(readyup) 
 	    	{
-	    		speaker++;
+	    		//speaker++;
 	    		speakReady.sleep();
-	    		listener--;
+	    		//listener--;
 	    	}
-	    	else
+	    readyup = true;
+	    this.send = word;
+	    
+	    	while(listener == 0)
 	    	{
-	    		speaker++;
-	    		listenReady.wake();
-	    		order.sleep();
-	    		listener--;
+	    		//speaker++;
+	    		ready.sleep();
+	    		//listener--;
+	    		
 	    	}
+	    
+	    listenReady.wake();
+	    ready.sleep();
+	    readyup = false;
+	    speakReady.wake();
     	lock.release();
     }
 
@@ -65,30 +74,34 @@ public class Communicator
     public int listen() 
     {
     	lock.acquire();
-		    if(speaker == 0)
+    	listener++;
+    	
+		    if(listener == 1 && readyup)
 		    {
-		    	listener++;
-		    	speakReady.sleep();
-		    	speaker--;
+		    	//listener++;
+		    	ready.wake();
+		    	//speaker--;
 		    }
-		    else
-		    {
-		    	listener++;
-		    	speakReady.wake();
-		    	order.wake();
-		    	speaker--;
-		    }
+		    
+		listenReady.sleep();
+		ready.wake();
+		listener--;
+		//speakReady.wake();
+		//speaker--;
+		    	
 		//int got = this.send;
 	    lock.release();	
 	    return this.send;
     }
+    
     private Lock lock;
     private Condition speakReady;
     private Condition listenReady;
-    private Condition order;
+    private Condition ready;
     private int send;
-    private int speaker;
+    //private int speaker;
     private int listener;
+    private boolean readyup;
 }
 
 
