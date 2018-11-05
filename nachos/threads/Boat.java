@@ -186,7 +186,7 @@
  				{
  					bg.ChildRowToMolokai();	//last child rows theres
  					childOnO--;				//childOnO == 0 in this instance
-					childonM++;
+					childOnM++;
  					pplOnBoat = 0;			//ensure no one on the boat
  					island = 1;				//notify that we are on Molokai
  					boatLocation = 1;		//boat is at Molokai
