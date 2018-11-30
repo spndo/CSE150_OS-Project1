@@ -1,8 +1,10 @@
 package nachos.userprog;
 
 import nachos.machine.*;
+
 import nachos.threads.*;
 import nachos.userprog.*;
+import java.util.LinkedList;
 
 import java.io.EOFException;
 
@@ -129,18 +131,43 @@ public class UserProcess {
      */
     public int readVirtualMemory(int vaddr, byte[] data, int offset,
 				 int length) {
-	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
+    	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
 
-	byte[] memory = Machine.processor().getMemory();
-	
-	// for now, just assume that virtual addresses equal physical addresses
-	if (vaddr < 0 || vaddr >= memory.length)
-	    return 0;
+    	byte[] memory = Machine.processor().getMemory();
+    				
+    	// for now, just assume that virtual addresses equal physical addresses
+    	if (vaddr < 0 || vaddr >= memory.length) {
+    		return 0;
+    	}
 
-	int amount = Math.min(length, memory.length-vaddr);
-	System.arraycopy(memory, vaddr, data, offset, amount);
+    	Machine.processor().getMemory(); // physical memory
+   		int physPage = Machine.processor().getNumPhysPages(); //Find total number of physical pages
 
-	return amount;
+
+   		LinkedList llist = new LinkedList(); 
+   		// will be used as a pageTable to map the user’s virtual address to the physical page
+    	//processor functions: pageFromAddress(vaddr), offsetFromAddress(vaddr)
+
+
+    	TranslationEntry variableNameHere = pageTable[physPage];  
+    	// to translate a single virtual to physical page translation
+    	
+    	//initialize coffsection variable
+   		CoffSection section = coff.getSection(0);
+    	if(section.isReadOnly()){
+   			variableNameHere.readOnly = true;
+    	} // The field TranslationEntry.readOnly should be set to true if the page is coming from a COFF section which is marked as read-only
+
+    	variableNameHere.used = true; // set to true when reading or writing
+
+    			//Find physical page number and physical page address
+    			//check to see if physical page is out of range
+    				
+    	int amount = Math.min(length, memory.length-vaddr);
+    	System.arraycopy(memory, vaddr, data, offset, amount);
+
+    	return amount; // must always return bytes, even if they are 0 if no data copied
+
     }
 
     /**
@@ -170,20 +197,32 @@ public class UserProcess {
      *			virtual memory.
      * @return	the number of bytes successfully transferred.
      */
-    public int writeVirtualMemory(int vaddr, byte[] data, int offset,
-				  int length) {
-	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
+    public int writeVirtualMemory(int vaddr, byte[] data, int offset, int length) {
+    	Lib.assertTrue(offset >= 0 && length >= 0 && offset+length <= data.length);
 
-	byte[] memory = Machine.processor().getMemory();
-	
-	// for now, just assume that virtual addresses equal physical addresses
-	if (vaddr < 0 || vaddr >= memory.length)
-	    return 0;
+    	byte[] memory = Machine.processor().getMemory();
+    				
+    	// for now, just assume that virtual addresses equal physical addresses
+    	if (vaddr < 0 || vaddr >= memory.length)
+    		return 0;
 
-	int amount = Math.min(length, memory.length-vaddr);
-	System.arraycopy(data, offset, memory, vaddr, amount);
+    	//Find virtual page number & address offset
+    	//processor functions: pageFromAddress(vaddr), offsetFromAddress(vaddr)
 
-	return amount;
+    	int virtualPageNum = Machine.processor().pageFromAddress(vaddr);
+    	TranslationEntry variableNameHere = pageTable[virtualPageNum];
+    	variableNameHere.used = true; // set to true when reading or writing
+    	variableNameHere.dirty = true; // set to true when page is written by user program
+    	//check to see if read-only
+
+    	//Find physical page number and physical page address
+    	//see if page number is out of range
+
+    	int amount = Math.min(length, memory.length-vaddr);
+    	System.arraycopy(data, offset, memory, vaddr, amount);
+
+    	return amount; // must always return bytes, even if they are 0
+
     }
 
     /**
@@ -282,28 +321,40 @@ public class UserProcess {
      * @return	<tt>true</tt> if the sections were successfully loaded.
      */
     protected boolean loadSections() {
-	if (numPages > Machine.processor().getNumPhysPages()) {
-	    coff.close();
-	    Lib.debug(dbgProcess, "\tinsufficient physical memory");
-	    return false;
-	}
+    	if (numPages > Machine.processor().getNumPhysPages()) {
+    	    coff.close();
+    	    Lib.debug(dbgProcess, "\tinsufficient physical memory");
+    	    return false;
+    	}
 
-	// load sections
-	for (int s=0; s<coff.getNumSections(); s++) {
-	    CoffSection section = coff.getSection(s);
-	    
-	    Lib.debug(dbgProcess, "\tinitializing " + section.getName()
-		      + " section (" + section.getLength() + " pages)");
 
-	    for (int i=0; i<section.getLength(); i++) {
-		int vpn = section.getFirstVPN()+i;
+    	//set up function to allocate pages in UserKernel
+    	//allocate pages
 
-		// for now, just assume virtual addresses=physical addresses
-		section.loadPage(i, vpn);
-	    }
-	}
-	
-	return true;
+    	// load sections
+    	for (int s=0; s<coff.getNumSections(); s++) {
+    	    CoffSection section = coff.getSection(s);
+    	    
+    	    Lib.debug(dbgProcess, "\tinitializing " + section.getName()
+    		      + " section (" + section.getLength() + " pages)");
+
+    	    for (int i=0; i<section.getLength(); i++) {
+    		int vpn = section.getFirstVPN()+i;
+
+    		// for now, just assume virtual addresses=physical addresses
+    		
+    	int physPage = Machine.processor().getNumPhysPages();
+         if (physPage != pageTable[vpn].ppn){ // if new user process cannot fit into physical memory return error
+        	 return false;
+         }
+        //Int physPageNum = pageTable[vpn].ppn;
+         pageTable[vpn].readOnly = section.isReadOnly();
+         section.loadPage(i, physPage);
+    	    }
+    	}
+    	 //release any resources allocated
+    	return true;
+
     }
 
     /**
